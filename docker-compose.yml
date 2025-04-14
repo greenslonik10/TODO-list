@@ -1,0 +1,40 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:13-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1703
+      POSTGRES_DB: todo_list
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  migrate:
+    image: migrate/migrate:v4.15.2
+    container_name: migrate
+    command: [
+      "-path", "/migrations",
+      "-database", "postgres://postgres:1703@postgres:5432/todo_list?sslmode=disable",
+      "up"
+    ]
+    volumes:
+      - ./internal/database/postgresql/migrations:/migrations
+    depends_on:
+      - postgres
+
+  app:
+    build: .
+    container_name: todo_list
+    environment:
+      POSTGRESQL_URL: postgres://postgres:1703@postgres:5432/todo_list?sslmode=disable
+    ports:
+      - "3000:3000"
+    depends_on:
+      - migrate
+      - postgres
+
+volumes:
+  pgdata:
